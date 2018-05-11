@@ -12,6 +12,10 @@ win32 {
     DEFINES += NOMINMAX
 }
 
+# For Qt5 we use the embedded version of zlib.
+# We need to have Qt5 sources files installed on the system.
+greaterThan(QT_MAJOR_VERSION, 4): INCLUDEPATH += $$absolute_path($$[QT_INSTALL_PREFIX]/../Src/qtbase/src/3rdparty/zlib)
+
 CONFIG(staticlib): DEFINES += QUAZIP_STATIC
 
 # Input

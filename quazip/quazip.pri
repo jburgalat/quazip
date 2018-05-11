@@ -1,3 +1,4 @@
+
 INCLUDEPATH += $$PWD
 DEPENDPATH += $$PWD
 HEADERS += \
@@ -31,3 +32,13 @@ SOURCES += $$PWD/qioapi.cpp \
            $$PWD/quazipnewinfo.cpp \
            $$PWD/unzip.c \
            $$PWD/zip.c
+
+# For Qt5 we use the embedded version of zlib.
+# We need to have Qt5 sources files installed on the system.
+greaterThan(QT_MAJOR_VERSION, 4): INCLUDEPATH += $$absolute_path($$[QT_INSTALL_PREFIX]/../Src/qtbase/src/3rdparty/zlib)
+
+# JB 11052018: additions for progress report
+HEADERS += $$PWD/jlcompress_obj.hpp \
+           $$PWD/jlworker.hpp
+SOURCES += $$PWD/jlcompress_obj.cpp \
+           $$PWD/jlworker.cpp

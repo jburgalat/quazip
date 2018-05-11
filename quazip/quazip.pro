@@ -41,8 +41,13 @@ CONFIG(staticlib): DEFINES += QUAZIP_STATIC
 include(quazip.pri)
 
 
+# Ship zlib.h in quazip installed includes if we are using Qt5.
+greaterThan(QT_MAJOR_VERSION, 4){
+  headers.files += $$absolute_path($$[QT_INSTALL_PREFIX]/../Src/qtbase/src/3rdparty/zlib/zlib.h)
+}
+
 CONFIG(debug, debug|release) {
-     mac: TARGET = $$join(TARGET,,,_debug) 
+     mac: TARGET = $$join(TARGET,,,_debug)
      win32: TARGET = $$join(TARGET,,,d)
 }
 
@@ -53,9 +58,9 @@ unix:!symbian {
     QMAKE_PKGCONFIG_DESTDIR = pkgconfig
     INSTALLS += headers target
 
-	OBJECTS_DIR=.obj
-	MOC_DIR=.moc
-	
+  OBJECTS_DIR=.obj
+  MOC_DIR=.moc
+
 }
 
 win32 {
