@@ -1,6 +1,11 @@
 QuaZIP changes
 
-* Current
+* 2018-06-13 0.7.6
+        * Fixed the Zip Slip vulnerability in JlCompress
+        * Renamed crypt.h to minizip_crypt.h to avoid conflicts
+
+* 2018-05-20 0.7.5
+        * Fixed target_link_libraries call in CMakeLists
         * Worked around a Qt 4.6 bug (QTBUG-15421) screwing up hidden
           files handling in JlCompress::compressDir()
         * Removed Q_FOREACH uses to avoid conflicts (SF patch #32)
