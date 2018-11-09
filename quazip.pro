@@ -1,8 +1,6 @@
 TEMPLATE=subdirs
 CONFIG += ordered
 
-SUBDIRS= quazip JlWorkerGUItest qztest
+SUBDIRS= quazip tests
 
-JlWorkerGUItest.depends = quazip
-qztest.depends = quazip
 

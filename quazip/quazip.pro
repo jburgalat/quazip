@@ -1,13 +1,9 @@
+# Quazip project file (v0.7.6)
+
 TEMPLATE = lib
 CONFIG += qt warn_on
 QT -= gui
 
-# Creating pkgconfig .pc file
-CONFIG += create_prl no_install_prl create_pc
-
-QMAKE_PKGCONFIG_PREFIX = $$PREFIX
-QMAKE_PKGCONFIG_INCDIR = $$headers.path
-QMAKE_PKGCONFIG_REQUIRES = Qt5Core
 
 # The ABI version.
 
@@ -29,85 +25,161 @@ QMAKE_PKGCONFIG_REQUIRES = Qt5Core
 # 2.0, VERSION to 2.0.0.
 # And so on.
 
+# install in Qt directories will also define a prf file so we can include quazip using:
+#  CONFIG += quazip(d)
+
+INSTALL_IN_QT = true
 
 # This one handles dllimport/dllexport directives.
-DEFINES += QUAZIP_BUILD
+DEFINES += QUAZIP_COMPILE_LIBRARY
 
-# You'll need to define this one manually if using a build system other
-# than qmake or using QuaZIP sources directly in your project.
-CONFIG(staticlib): DEFINES += QUAZIP_STATIC
+# datetime bug on windaube
+win32:DEFINES += NOMINMAX
 
-# Input
-include(quazip.pri)
+# Input sources
+
+INCLUDEPATH += $$PWD
+DEPENDPATH += $$PWD
+HEADERS += \
+        $$PWD/minizip_crypt.h \
+        $$PWD/ioapi.h \
+        $$PWD/JlCompress.h \
+        $$PWD/quaadler32.h \
+        $$PWD/quachecksum32.h \
+        $$PWD/quacrc32.h \
+        $$PWD/quagzipfile.h \
+        $$PWD/quaziodevice.h \
+        $$PWD/quazipdir.h \
+        $$PWD/quazipfile.h \
+        $$PWD/quazipfileinfo.h \
+        $$PWD/quazip_global.h \
+        $$PWD/quazip.h \
+        $$PWD/quazipnewinfo.h \
+        $$PWD/unzip.h \
+        $$PWD/zip.h
+
+SOURCES += $$PWD/qioapi.cpp \
+           $$PWD/JlCompress.cpp \
+           $$PWD/quaadler32.cpp \
+           $$PWD/quacrc32.cpp \
+           $$PWD/quagzipfile.cpp \
+           $$PWD/quaziodevice.cpp \
+           $$PWD/quazip.cpp \
+           $$PWD/quazipdir.cpp \
+           $$PWD/quazipfile.cpp \
+           $$PWD/quazipfileinfo.cpp \
+           $$PWD/quazipnewinfo.cpp \
+           $$PWD/unzip.c \
+           $$PWD/zip.c
+
+# For Qt5 we use the embedded version of zlib.
+# We need to have Qt5 sources files installed on the system.
+INCLUDEPATH += $$absolute_path($$[QT_INSTALL_PREFIX]/../Src/qtbase/src/3rdparty/zlib/src)
+
+# JB 11052018: additions for progress report
+HEADERS += $$PWD/jlcompress_obj.hpp \
+           $$PWD/jlworker.hpp
+SOURCES += $$PWD/jlcompress_obj.cpp \
+           $$PWD/jlworker.cpp
 
 
-# Ship zlib.h in quazip installed includes if we are using Qt5.
-greaterThan(QT_MAJOR_VERSION, 4){
-  headers.files += $$absolute_path($$[QT_INSTALL_PREFIX]/../Src/qtbase/src/3rdparty/zlib/zlib.h)
+# add QT5 src zlib header to Quazip installation.
+headers.files += $$absolute_path($$[QT_INSTALL_PREFIX]/../Src/qtbase/src/3rdparty/zlib/src/zlib.h)
+
+# uppdate target name for Win/Mac in debug mode
+win32{
+    CONFIG(debug, debug|release):TARGET = $$join(TARGET,,,d)
+}else:macx{
+    CONFIG(debug, debug|release):TARGET = $$join(TARGET,,,_debug)
 }
 
-CONFIG(debug, debug|release) {
-     mac: TARGET = $$join(TARGET,,,_debug)
-     win32: TARGET = $$join(TARGET,,,d)
-}
 
-unix:!symbian {
-    headers.path=$$PREFIX/include/quazip
-    headers.files=$$HEADERS
-    target.path=$$PREFIX/lib/$${LIB_ARCH}
-    QMAKE_PKGCONFIG_DESTDIR = pkgconfig
-    INSTALLS += headers target
+# Generate the prf file (ugly but it works)
 
-  OBJECTS_DIR=.obj
-  MOC_DIR=.moc
+QZP_LIB_NAME            = $$TARGET
+QZP_DLL_EXPORT          = QUAZIP_USE_LIBRARY
+QZP_INCLUDE_INSTALL_DIR =
+QZP_LIBRARY_INSTALL_DIR =
+QZP_EXTRA_MODULES       =
+QZP_EXTRA_LIBS          =
+QZP_CPP_FLAGS           =
 
-}
 
-win32 {
-    headers.path=$$PREFIX/include/quazip
-    headers.files=$$HEADERS
-    INSTALLS += headers target
-    CONFIG(staticlib){
-        target.path=$$PREFIX/lib
-        QMAKE_PKGCONFIG_LIBDIR = $$PREFIX/lib/
-    } else {
-        target.path=$$PREFIX/bin
-        QMAKE_PKGCONFIG_LIBDIR = $$PREFIX/bin/
+LIBS += $$QZP_EXTRA_LIBS
+
+# should we install in Qt directory ?
+contains(INSTALL_IN_QT,true){
+    BUILD_DIR= $$[QT_INSTALL_PREFIX]
+}else{
+    win32{
+        BUILD_DIR= $$PWD/build
+    }else:unix{
+        BUILD_DIR = /$(HOME)/local
     }
-
-    ## odd, this path seems to be relative to the
-    ## target.path, so if we install the .dll into
-    ## the 'bin' dir, the .pc will go there as well,
-    ## unless have hack the needed path...
-    ## TODO any nicer solution?
-    QMAKE_PKGCONFIG_DESTDIR = ../lib/pkgconfig
-    # workaround for qdatetime.h macro bug
-    DEFINES += NOMINMAX
 }
+QZP_INCLUDE_INSTALL_DIR=$${BUILD_DIR}/include
+windows:QZP_LIBRARY_INSTALL_DIR=$${BUILD_DIR}/bin
+unix:QZP_LIBRARY_INSTALL_DIR=$${BUILD_DIR}/lib
+QZP_PRF_INSTALL_DIR=$${BUILD_DIR}/mkspecs/features
 
+# Installation rules
 
-symbian {
+# Target
+target.path = $${QZP_LIBRARY_INSTALL_DIR}
 
-    # Note, on Symbian you may run into troubles with LGPL.
-    # The point is, if your application uses some version of QuaZip,
-    # and a newer binary compatible version of QuaZip is released, then
-    # the users of your application must be able to relink it with the
-    # new QuaZip version. For example, to take advantage of some QuaZip
-    # bug fixes.
+# associated headers
+headers_files.files = $$HEADERS
+headers_files.path = $${QZP_INCLUDE_INSTALL_DIR}/quazip
 
-    # This is probably best achieved by building QuaZip as a static
-    # library and providing linkable object files of your application,
-    # so users can relink it.
+# A feature file build from scratch
+prf_tpl = \
+"QZP_INCDIR = $${QZP_INCLUDE_INSTALL_DIR}" \
+"QZP_LIBDIR = $${QZP_LIBRARY_INSTALL_DIR}" \
+"CONFIG *= qt" \
+"QT     += widgets svg printsupport concurrent $${QZP_EXTRA_MODULES}" \
+"LINKAGE =" \
+"exists(\$\${QZP_LIBDIR}/qplotlib.framework) {" \
+"  QMAKE_CXXFLAGS += -F\$\${QZP_LIBDIR}" \
+"  LIBS *= -F\$\${QZP_LIBDIR}" \
+"  INCLUDEPATH += \$\${QZP_LIBDIR}/qplotlib.framework/Headers" \
+"  LINKAGE = -framework quazip" \
+"}" \
+"isEmpty(LINKAGE) {" \
+"  INCLUDEPATH += \$\${QZP_INCDIR}/quazip" \
+"  LIBS += -L\$\${QZP_LIBDIR}" \
+"  LINKAGE = -l$${QZP_LIB_NAME}" \
+"  LINKAGE += $${QZP_EXTRA_LIBS}" \
+"}" \
+"DEFINES +=$${QZP_CPP_FLAGS}" \
+"windows:DEFINES +=$${QZP_DLL_EXPORT}" \
+"LIBS += \$\$LINKAGE"
+# The name of the file deppends on the build
+CONFIG(debug, debug|release):PRF_FILE=$$OUT_PWD/quazipd.prf
+CONFIG(release, debug|release):PRF_FILE=$$OUT_PWD/quazip.prf
+write_file("$${PRF_FILE}",prf_tpl)
 
-    CONFIG += staticlib
-    CONFIG += debug_and_release
+prf_file.files = $${PRF_FILE}
+prf_file.path = $${QZP_PRF_INSTALL_DIR}
 
-    LIBS += -lezip
+INSTALLS += target \
+    headers_files \
+    prf_file
 
-    #Export headers to SDK Epoc32/include directory
-    exportheaders.sources = $$HEADERS
-    exportheaders.path = quazip
-    for(header, exportheaders.sources) {
-        BLD_INF_RULES.prj_exports += "$$header $$exportheaders.path/$$basename(header)"
+# Ugly hack on windows to put the lib file where it belongs if we install in Qt directories
+contains(INSTALL_IN_QT,true){
+    win32:!win32-g++:{
+        movelib.target =  $$shell_path("$${BUILD_DIR}/bin/$${QZP_LIB_NAME}.lib")
+        movelib.path = $$shell_path("$${BUILD_DIR}/lib/")
+        movelib.commands = if exist $$shell_path("$${BUILD_DIR}/bin/$${QZP_LIB_NAME}.lib") $(MOVE) $$shell_path("$${BUILD_DIR}/bin/$${QZP_LIB_NAME}.lib") $$shell_path("$${BUILD_DIR}/lib/")
+        movelib.depends = install_target
+        INSTALLS += movelib
+        # also copy pdb file.
+        CONFIG(debug,debug|release){
+        movepdb.target =  $$shell_path("$${BUILD_DIR}/bin/$${QZP_LIB_NAME}.pdb")
+        movepdb.path = $$shell_path("$${BUILD_DIR}/lib/")
+        movepdb.commands = if exist $$shell_path("$${BUILD_DIR}/bin/$${QZP_LIB_NAME}.pdb") $(MOVE) $$shell_path("$${BUILD_DIR}/bin/$${QZP_LIB_NAME}.pdb") $$shell_path("$${BUILD_DIR}/lib/")
+        movepdb.depends = install_target
+        INSTALLS += movepdb
+        }
     }
 }
